@@ -171,9 +171,8 @@ contract World is IWorld {
         PlayerState storage state = _playerStates[player];
         require(state.currentTurn < currentTurn, "Player already played this turn");
 
-        // TODO: try/catch on strategy calls
         _initPlayerTurn(player, state);
-        IStrategy(_playerStrategy[player]).handleTurn(state);
+        try IStrategy(_playerStrategy[player]).handleTurn(state) {} catch {}
         _finishPlayerTurn();
 
         emit TurnSummary(
@@ -261,8 +260,12 @@ contract World is IWorld {
         PlayerState storage proposerState = _playerStates[_activePlayer];
         PlayerState storage receiverState = _playerStates[partner];
 
-        // TODO: try/catch
-        if (IStrategy(_playerStrategy[partner]).handleTrade(proposerState, receiverState)) {
+        bool approve;
+        try IStrategy(_playerStrategy[partner]).handleTrade(proposerState, receiverState) returns (bool _approve) {
+            approve = _approve;
+        } catch {}
+
+        if (approve) {
             uint proposerCivilians = _getCivilianPopulation(proposerState);
             uint receiverCivilians = _getCivilianPopulation(receiverState);
 
@@ -300,10 +303,16 @@ contract World is IWorld {
         bool success;
         bool hasBattle;
 
-        // TODO: try/catch
-        (resp, defenders, fortification) = IStrategy(_playerStrategy[target]).handleAttack(
-            attackerState, defenderState, soldiers
-        );
+        // Get attack response with fallback
+        try IStrategy(_playerStrategy[target]).handleAttack(
+                attackerState, defenderState, soldiers
+        ) returns (AttackResponse _resp, uint _defenders, uint _fortification) {
+            resp = _resp;
+            defenders = _defenders;
+            fortification = _fortification;
+        } catch {}
+
+        // Validate attack response
         (resp, defenders, fortification) = _validateAttackResponse(
             defenderState, resp, defenders, fortification
         );

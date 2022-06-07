@@ -59,8 +59,10 @@ def test_prevents_multiple_actions(world, multi_action_strategy):
     world.registerStrategy(multi_action_strategy.address, { 'from': player })
     world.startGame()
 
-    with reverts(ERROR_ONLY_PLAYER_NOT_ACTED):
-        world.playTurn(player)
+    # Assert no state changes
+    world.playTurn(player)
+    assert_player_state(world, player, 'culture', 0)
+    assert_player_state(world, player, 'resources', INITIAL_RESOURCES + INITIAL_LAND)
 
 # Basic production test
 
