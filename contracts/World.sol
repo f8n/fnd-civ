@@ -105,6 +105,10 @@ contract World is IWorld {
         isGameMaster[new_gm] = true;
     }
 
+    function removeGameMaster(address gm) external onlyGameMaster {
+        isGameMaster[gm] = false;
+    }
+
     function startGame() external onlyGameMaster onlyGameNotInProgress {
         gameStartBlock = block.number;
         gameNumber += 1;
@@ -136,13 +140,6 @@ contract World is IWorld {
         _resign(msg.sender, "Player resigned");
     }
 
-    // Public random number generator used for randomness
-    function random(uint number) public view returns (uint) {
-        return uint(keccak256(abi.encodePacked(
-            block.timestamp, block.difficulty, msg.sender
-        ))) % number;
-    }
-
     // Getters
 
     function isGameInProgress() public view returns(bool) {
@@ -172,7 +169,9 @@ contract World is IWorld {
         require(state.currentTurn < currentTurn, "Player already played this turn");
 
         _initPlayerTurn(player, state);
-        try IStrategy(_playerStrategy[player]).handleTurn(state) {} catch {}
+        try IStrategy(_playerStrategy[player]).handleTurn{
+            gas: HANDLE_TURN_GAS_LIMIT
+        }(state) {} catch {}
         _finishPlayerTurn();
 
         emit TurnSummary(
@@ -261,7 +260,9 @@ contract World is IWorld {
         PlayerState storage receiverState = _playerStates[partner];
 
         bool approve;
-        try IStrategy(_playerStrategy[partner]).handleTrade(proposerState, receiverState) returns (bool _approve) {
+        try IStrategy(_playerStrategy[partner]).handleTrade{
+            gas: HANDLE_TRADE_GAS_LIMIT
+        }(proposerState, receiverState) returns (bool _approve) {
             approve = _approve;
         } catch {}
 
@@ -304,8 +305,10 @@ contract World is IWorld {
         bool hasBattle;
 
         // Get attack response with fallback
-        try IStrategy(_playerStrategy[target]).handleAttack(
-                attackerState, defenderState, soldiers
+        try IStrategy(_playerStrategy[target]).handleAttack{
+            gas: HANDLE_ATTACK_GAS_LIMIT
+        }(
+            attackerState, defenderState, soldiers
         ) returns (AttackResponse _resp, uint _defenders, uint _fortification) {
             resp = _resp;
             defenders = _defenders;
