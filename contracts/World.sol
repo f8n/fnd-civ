@@ -471,11 +471,11 @@ contract World is IWorld {
 
     function _takeLoot(PlayerState storage attackerState, PlayerState storage defenderState) private {
         uint loot = _computeLoot(defenderState);
-        attackerState.resources += loot;
 
         if (loot > defenderState.resources) {
             defenderState.resources = 0;
         } else {
+            attackerState.resources += loot;
             defenderState.resources -= loot;
         }
     }
@@ -483,6 +483,10 @@ contract World is IWorld {
     function _takeLand(PlayerState storage attackerState, PlayerState storage defenderState) private {
         if (defenderState.land > 0) {
             attackerState.land += 1;
+
+            if (defenderState.land == defenderState.farms) {
+                defenderState.farms -= 1;
+            }
             defenderState.land -= 1;
         }
     }
