@@ -1,6 +1,8 @@
+.DS_Store
 __pycache__
 .env
 .history
 .hypothesis/
 build/
 reports/
+civ/players.py
