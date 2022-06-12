@@ -9,9 +9,9 @@ import "./mixins/Constants.sol";
 
 contract World is IWorld {
 
-    // Game vars
-    mapping(address => bool) public isGameMaster;
+    // Game admin
 
+    mapping(address => bool) public isGameMaster;
     uint public gameNumber;
     uint public gameStartBlock;
     uint public gameEndBlock;
@@ -20,6 +20,7 @@ contract World is IWorld {
     mapping(address => bool) public isPlayerActive;
 
     // Turn vars
+
     uint public currentTurn;
     uint public currentTurnCompleted;
 
@@ -28,6 +29,7 @@ contract World is IWorld {
     bool public _hasPlayerActed;
 
     // Player vars
+
     mapping(address => address) private _playerStrategy;
     mapping(address => PlayerState) private _playerStates;
 
@@ -95,7 +97,7 @@ contract World is IWorld {
         _;
     }
 
-    // Setup, game admin
+    // Setup
 
     constructor () {
         isGameMaster[msg.sender] = true;
@@ -109,6 +111,8 @@ contract World is IWorld {
         isGameMaster[gm] = false;
     }
 
+    // Game admin
+
     function startGame() external onlyGameMaster onlyGameNotInProgress {
         gameStartBlock = block.number;
         gameNumber += 1;
@@ -118,6 +122,43 @@ contract World is IWorld {
     function endGame() external onlyGameMaster onlyGameInProgress {
         currentTurn = 0;
         gameEndBlock = block.number;
+    }
+
+    // Game import for bug fixes
+
+    function migrateWorld(address _world) external onlyGameMaster onlyGameNotInProgress {
+        World world = World(_world);
+
+        gameStartBlock = world.gameStartBlock();
+        gameNumber = world.gameNumber();
+        currentTurn = world.currentTurn();
+        currentTurnCompleted = world.currentTurnCompleted();
+    }
+
+    function migratePlayers(address _world, address[] calldata _players) external onlyGameMaster {
+        World world = World(_world);
+
+        for (uint i = 0; i < _players.length; i++) {
+            address _player = _players[i];
+            _playerStates[_player] = world.getState(_player);
+            _playerStrategy[_player] = world.getStrategy(_player);
+
+            if (!isPlayerActive[_player] && world.isPlayerActive(_player)) {
+                isPlayerActive[_player] = true;
+                numActivePlayers += 1;
+            }
+        }
+    }
+
+    // Only run before game hasn't (restarted)
+    function validateMigration(address _world) public returns (bool) {
+        World world = World(_world);
+        if (gameStartBlock != world.gameStartBlock()) return false;
+        if (gameNumber != world.gameNumber()) return false;
+        if (currentTurn != world.currentTurn()) return false;
+        if (currentTurnCompleted != world.currentTurnCompleted()) return false;
+        if (numActivePlayers != world.numActivePlayers()) return false;
+        return true;
     }
 
     // Player admin

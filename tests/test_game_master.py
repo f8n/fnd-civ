@@ -20,6 +20,14 @@ def test_add_gm_as_not_gm(world):
     with reverts(ERROR_NOT_GM):
         world.addGameMaster(new_gm, { 'from': new_gm })
 
+def test_remove_gm_as_gm(world):
+    sender, new_gm = accounts[0:2]
+    world.addGameMaster(new_gm, { 'from': sender })
+    assert world.isGameMaster(sender)
+    assert world.isGameMaster(new_gm)
+    world.removeGameMaster(sender, { 'from': new_gm })
+    assert not world.isGameMaster(sender)
+
 # Game start / end
 
 def test_start_game_success(world):

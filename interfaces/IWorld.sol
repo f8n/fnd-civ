@@ -17,6 +17,7 @@ interface IWorld {
 
     // Views
     function getStrategy(address player) external view returns(address);
+    function getState(address player) external view returns(PlayerState memory);
     function getCivilianPopulation(address player) external view returns(uint);
     function getNextScienceCost(PlayerState memory state) external returns(uint);
 
