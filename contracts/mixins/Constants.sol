@@ -7,8 +7,8 @@ uint constant MAX_FORTIFICATION = 10;
 uint constant FOOD_PER_FARM = 5;
 uint constant POP_PER_SCIENCE = 10;
 uint constant HANDLE_TURN_GAS_LIMIT = 5000000;
-uint constant HANDLE_ATTACK_GAS_LIMIT = 5000000;
-uint constant HANDLE_TRADE_GAS_LIMIT = 5000000;
+uint constant HANDLE_ATTACK_GAS_LIMIT = 1000000;
+uint constant HANDLE_TRADE_GAS_LIMIT = 1000000;
 
 // To be used in future versions
 enum Event {

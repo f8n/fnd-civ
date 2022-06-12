@@ -140,7 +140,9 @@ contract World is IWorld {
 
         for (uint i = 0; i < _players.length; i++) {
             address _player = _players[i];
-            _playerStates[_player] = world.getState(_player);
+            _playerStates[_player] = _validateMigratedState(
+                world.getState(_player)
+            );
             _playerStrategy[_player] = world.getStrategy(_player);
 
             if (!isPlayerActive[_player] && world.isPlayerActive(_player)) {
@@ -150,8 +152,25 @@ contract World is IWorld {
         }
     }
 
+    function _validateMigratedState(PlayerState memory state)
+        private
+        pure
+        returns (PlayerState memory)
+    {
+        // Cap farms to land
+        if (state.farms > state.land) {
+            state.farms = state.land;
+        }
+
+        // Cap soldiers to population
+        if (state.soldiers > state.population) {
+            state.soldiers = state.population;
+        }
+        return state;
+    }
+
     // Only run before game hasn't (restarted)
-    function validateMigration(address _world) public returns (bool) {
+    function validateMigration(address _world) public view returns (bool) {
         World world = World(_world);
         if (gameStartBlock != world.gameStartBlock()) return false;
         if (gameNumber != world.gameNumber()) return false;
@@ -568,10 +587,14 @@ contract World is IWorld {
     // Internal production functions
 
     function _getCivilianPopulation(PlayerState memory state) private view returns (uint) {
+        // Should never happen, but guarding here anyway
+        if (state.soldiers > state.population) return 0;
         return state.population - state.soldiers;
     }
 
     function _getUnfarmedLand(PlayerState memory state) private view returns (uint) {
+        // Should never happen, but guarding here anyway
+        if (state.farms > state.land) return 0;
         return state.land - state.farms;
     }
 
